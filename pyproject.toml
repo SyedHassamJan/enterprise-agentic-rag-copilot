@@ -1,13 +1,13 @@
 [project]
-name = "employee-support-copilot"
-version = "1.0.0"
+name = "enterprise-agentic-rag-copilot"
+version = "1.1.0"
 description = "Multi-department agentic RAG copilot for IT and HR support"
 requires-python = ">=3.11"
 
 [tool.ruff]
 line-length = 120
 target-version = "py311"
-extend-exclude = ["venv", "Agentic-RAG-demo"]
+extend-exclude = ["venv"]
 
 [tool.ruff.lint]
 # E/W pycodestyle, F pyflakes, B bugbear, UP pyupgrade, I isort
