@@ -1,3 +1,4 @@
+import hashlib
 import time
 from pinecone import Pinecone, ServerlessSpec
 from langchain_openai import OpenAIEmbeddings
@@ -97,5 +98,29 @@ def get_retriever(namespace: str):
     return get_vectorstore(namespace).as_retriever(search_kwargs={"k": settings.top_k})
 
 
-def add_documents(chunks, namespace: str):
-    return get_vectorstore(namespace).add_documents(chunks)
+def _source_prefix(source: str) -> str:
+    return hashlib.sha1(source.encode("utf-8")).hexdigest()[:16] + "#"
+
+
+def upsert_source(chunks, namespace: str, source: str) -> list[str]:
+    """Replace every vector of one source document with `chunks`.
+
+    IDs are `<sha1(source)>#<chunk index>`, so re-ingesting the same file overwrites
+    instead of duplicating, and stale chunks from a longer previous version are removed.
+    """
+    prefix = _source_prefix(source)
+    index = ensure_index()
+    for id_batch in index.list(prefix=prefix, namespace=namespace):
+        if id_batch:
+            index.delete(ids=list(id_batch), namespace=namespace)
+    if not chunks:
+        return []
+    ids = [f"{prefix}{i:04d}" for i in range(len(chunks))]
+    return get_vectorstore(namespace).add_documents(chunks, ids=ids)
+
+
+def reset_namespace(namespace: str) -> None:
+    index = ensure_index()
+    stats = index.describe_index_stats()
+    if namespace in (stats.get("namespaces") or {}):
+        index.delete(delete_all=True, namespace=namespace)

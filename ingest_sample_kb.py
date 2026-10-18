@@ -1,24 +1,38 @@
+"""Index data/sample_kb/<department>/ into each department's Pinecone namespace.
+
+Safe to re-run: every file is upserted with deterministic IDs, so changed files are
+replaced and unchanged files are simply overwritten (no duplicates).
+
+    python ingest_sample_kb.py            # upsert all sample documents
+    python ingest_sample_kb.py --reset    # wipe the department namespaces first
+"""
+import argparse
 from pathlib import Path
 from app.core.config import get_settings
 from app.rag.departments import DEPARTMENTS
-from app.services.ingestion import load_file, chunk_documents
-from app.rag.vectorstore import add_documents
+from app.services.ingestion import load_file, chunk_documents, source_id, SUPPORTED
+from app.rag.vectorstore import upsert_source, reset_namespace
 
 settings = get_settings()
 
-# Each department's documents live in data/sample_kb/<key>/ and go to that department's namespace.
+parser = argparse.ArgumentParser()
+parser.add_argument("--reset", action="store_true", help="delete all vectors in each department namespace first")
+args = parser.parse_args()
+
 for dept in DEPARTMENTS.values():
     folder = Path(settings.sample_kb_dir) / dept.key
-    files = [p for p in folder.iterdir() if p.is_file()] if folder.is_dir() else []
+    files = sorted(p for p in folder.glob("*") if p.suffix.lower() in SUPPORTED) if folder.is_dir() else []
+    if args.reset:
+        reset_namespace(dept.namespace)
+        print(f"[{dept.key}] namespace '{dept.namespace}' cleared")
     if not files:
         print(f"[{dept.key}] no documents in {folder}, skipped")
         continue
 
-    all_docs = []
+    total = 0
     for path in files:
-        all_docs.extend(load_file(path))
-    chunks = chunk_documents(all_docs)
-    for c in chunks:
-        c.metadata["department"] = dept.key
-    ids = add_documents(chunks, dept.namespace)
-    print(f"[{dept.key}] Indexed {len(files)} files -> {len(chunks)} chunks -> {len(ids)} vectors in namespace '{dept.namespace}'")
+        chunks = chunk_documents(load_file(path))
+        for c in chunks:
+            c.metadata["department"] = dept.key
+        total += len(upsert_source(chunks, dept.namespace, source_id(path)))
+    print(f"[{dept.key}] {len(files)} files -> {total} chunks upserted into namespace '{dept.namespace}'")

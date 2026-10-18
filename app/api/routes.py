@@ -4,8 +4,8 @@ from pydantic import BaseModel, Field
 from app.core.config import get_settings
 from app.rag.departments import DEPARTMENTS
 from app.rag.workflow import ask
-from app.rag.vectorstore import add_documents
-from app.services.ingestion import load_file, chunk_documents, SUPPORTED
+from app.rag.vectorstore import upsert_source
+from app.services.ingestion import load_file, chunk_documents, source_id, SUPPORTED
 from app.services.audit import write_audit
 
 router = APIRouter(prefix="/api")
@@ -65,5 +65,5 @@ async def ingest(
     chunks = chunk_documents(docs)
     for c in chunks:
         c.metadata["department"] = department
-    ids = add_documents(chunks, DEPARTMENTS[department].namespace)
+    ids = upsert_source(chunks, DEPARTMENTS[department].namespace, source_id(dest))
     return {"message": "Document indexed", "file": dest.name, "department": department, "chunks": len(chunks), "ids_created": len(ids)}

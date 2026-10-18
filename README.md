@@ -53,6 +53,45 @@ Everything reads from that registry: the router prompt, the retrieval namespaces
 
 ---
 
+## Evaluation
+
+The agent is scored against a **66-question golden set** ([eval/golden_set.jsonl](eval/golden_set.jsonl)) over a 20-document, 41-chunk knowledge base. The set deliberately includes failure-prone cases: cross-department questions, an **outdated 2024 benefits guide** that must not be cited, the ambiguous term "P1" (an IT ticket priority *and* an HR payroll priority), unanswerable company questions, public-web questions, vague phrasing, and prompt injection.
+
+Each question is checked for routing, retrieval, answer source and required/forbidden facts. A separate judge model (`gpt-4.1`) scores **faithfulness**: it breaks the answer into individual claims and checks each one against the evidence the agent actually used.
+
+**Baseline** (`gpt-4o-mini`, `text-embedding-3-small`, top-k 4). The full report is in [eval/reports/latest.md](eval/reports/latest.md).
+
+| Metric | Baseline |
+|---|---|
+| **Overall pass rate** | **84.8%** |
+| Routing accuracy | 93.8% |
+| Routing exact (no unnecessary departments) | 86.2% |
+| Retrieval hit rate | 100.0% |
+| Answer source correct | 90.3% |
+| Required facts present | 88.9% |
+| Outdated / forbidden content leaked | 0 of 5 |
+| Faithfulness (mean claim support) | 97.8% |
+| Fabricated company policy on unanswerable questions | 0.0% |
+| Latency p50 / p95 | 3.7 s / 12.2 s |
+| Cost per question | ≈ $0.0004 |
+
+**What the evaluation revealed:**
+
+1. **The evidence grader is the weakest link.** Retrieval found the right document 100% of the time, but the grader rejected good evidence in 4 cases. In the worst one, the agent fell back to the web and told an employee they **could** use Dropbox, contradicting the company policy it had just retrieved.
+2. **The router sends general-knowledge questions to "direct chat".** In those cases the model answers from memory. For "current IRS 401(k) limit" it gave stale 2023 figures with no source.
+3. **Vague questions produce plausible-sounding advice that isn't in the documents,** such as "email HR directly". The faithfulness judge catches this.
+4. **The router over-includes departments** in about 7% of questions. Answers stay correct, but latency and cost go up.
+
+Results vary by about ±3 points between runs because LLM output is non-deterministic.
+
+```powershell
+python -m eval.run_eval                       # full run, writes eval/reports/latest.md
+python -m eval.run_eval --category outdated_trap
+python -m pytest                               # offline tests: fakes, no API keys
+```
+
+---
+
 ## Run it
 
 **Prerequisites:** Python 3.11+, plus API keys for **OpenAI**, **Pinecone** (free tier) and **Tavily** (free tier).
@@ -63,11 +102,11 @@ python -m venv venv
 pip install -r requirements.txt
 
 copy .env.example .env               # then fill in the 4 keys
-python ingest_sample_kb.py           # once: indexes data/sample_kb/it -> it-kb, data/sample_kb/hr -> hr-kb
+python ingest_sample_kb.py           # indexes data/sample_kb/it -> it-kb, data/sample_kb/hr -> hr-kb
 python run.py                        # http://127.0.0.1:8080   (API docs: /docs)
 ```
 
-> Run `ingest_sample_kb.py` only once. Running it again adds duplicate vectors.
+> Ingestion is **idempotent**. Each chunk gets a deterministic ID (`sha1(source)#chunk`), so re-running it or re-uploading a file replaces that document's vectors instead of duplicating them. Use `python ingest_sample_kb.py --reset` to wipe the department namespaces first.
 
 ### Try these
 
@@ -111,8 +150,12 @@ app/
   rag/workflow.py        the agent graph
   services/ingestion.py  PDF/TXT/MD/DOCX loading + chunking
   services/audit.py      SQLite audit log
-data/sample_kb/it/       IT handbook + service desk runbook
-data/sample_kb/hr/       HR handbook + HR operations runbook
+data/sample_kb/it/       10 IT documents (handbook, runbook, security, BYOD, software, offboarding, ...)
+data/sample_kb/hr/       10 HR documents (handbook, leave, expenses, benefits 2026 + archived 2024, ...)
+eval/golden_set.jsonl    66 labelled evaluation questions
+eval/run_eval.py         evaluation runner + LLM faithfulness judge
+eval/reports/            evaluation reports (latest.md + raw JSON)
+tests/                   offline pytest suite (fake LLM / vector store / search)
 templates/, static/      web UI
 Agentic-RAG-demo/        original notebook prototype
 ```
@@ -120,10 +163,10 @@ Agentic-RAG-demo/        original notebook prototype
 ## Known limitations / roadmap
 
 - The answer and trace are returned at the end of the request. They are not streamed yet.
-- There is no evaluation set yet. Next step: score routing accuracy, grading accuracy and faithfulness.
-- Re-ingesting the same file creates duplicate vectors. There are no deterministic IDs yet.
-- There is a single shared admin key and no user authentication on chat.
-- Planned: free model option (Groq + local HuggingFace embeddings), tool calling (create ticket, check status), conversation memory, hybrid search with re-ranking.
+- The evidence grader produces false negatives (see Evaluation). Next step: per-chunk grading and answers that must cite their sources.
+- The router sends general-knowledge questions to direct chat. Next step: route them to web search.
+- There is a single shared admin key and no user authentication on chat. Planned: role-based access control at retrieval time.
+- Planned: hybrid search with re-ranking, document versioning, tool calling with human approval, conversation memory, CI with an evaluation quality gate.
 
 ## Credits
 
@@ -140,3 +183,7 @@ This project builds on two single-department reference projects by **Bappy Ahmed
 - Adds department-scoped document upload (API and UI) and records departments in the audit log.
 - Replaces automatic index deletion on an embedding-dimension mismatch with an explicit error.
 - Fixes Windows citation paths, unifies the sample data, and rewrites the documentation.
+- Expands the knowledge base from 4 to 20 documents, including deliberate traps (an outdated policy, overlapping topics, ambiguous terms).
+- Adds an evaluation harness: a 66-question golden set, an LLM faithfulness judge, and cost and latency tracking.
+- Makes ingestion idempotent with deterministic vector IDs, and replaces the deprecated `langchain-community` loaders.
+- Adds an offline pytest suite.
