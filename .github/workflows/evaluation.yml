@@ -1,0 +1,45 @@
+# LLM quality gate: runs the 72-question golden set against the real services.
+# Manual only by default because every run costs money (~$0.25 OpenAI + Pinecone rerank quota).
+name: Evaluation
+
+on:
+  workflow_dispatch:
+    inputs:
+      min_pass_rate:
+        description: "Fail if overall pass rate is below this (0-1)"
+        default: "0.90"
+  # Uncomment to run weekly (Monday 06:00 UTC):
+  # schedule:
+  #   - cron: "0 6 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+      TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+      ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run evaluation with quality gate
+        run: python -m eval.run_eval --label ci --min-pass-rate "${{ inputs.min_pass_rate || '0.90' }}"
+      - name: Publish summary
+        if: always()
+        run: |
+          if [ -f eval/reports/ci.md ]; then sed -n '/## Failures/q;p' eval/reports/ci.md >> "$GITHUB_STEP_SUMMARY"; fi
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-report
+          path: eval/reports/ci.*

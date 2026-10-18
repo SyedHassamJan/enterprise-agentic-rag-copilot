@@ -307,6 +307,8 @@ def main():
     parser.add_argument("--rescore", metavar="REPORT_JSON",
                         help="re-apply the current golden-set checks to a saved report's answers (no agent calls); "
                              "keeps that run's faithfulness judgements")
+    parser.add_argument("--min-pass-rate", type=float, metavar="0-1",
+                        help="quality gate for CI: exit with code 2 if the overall pass rate is below this value")
     args = parser.parse_args()
 
     items = [json.loads(line) for line in Path(args.golden).read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -320,8 +322,7 @@ def main():
         by_id = {r["id"]: r for r in saved["results"]}
         rows = [score_checks(item, by_id[item["id"]]) for item in items if "error" not in by_id[item["id"]]]
         meta = {**saved["meta"], "label": args.label or saved["meta"].get("label"), "rescored": True}
-        write_reports(meta, rows, args.label)
-        return 0
+        return quality_gate(write_reports(meta, rows, args.label), args.min_pass_rate)
 
     judge = None if args.no_judge else ChatOpenAI(
         model=args.judge_model, temperature=0, api_key=settings.openai_api_key
@@ -344,7 +345,20 @@ def main():
         "top_k": settings.top_k,
     }
     summary = write_reports(meta, rows, args.label)
-    return 0 if summary["errors"] == 0 else 1
+    return quality_gate(summary, args.min_pass_rate)
+
+
+def quality_gate(summary: dict, min_pass_rate: float | None) -> int:
+    """Exit code for CI: 1 = run errors, 2 = quality below threshold, 0 = OK."""
+    if summary["errors"]:
+        print(f"QUALITY GATE: {summary['errors']} question(s) errored")
+        return 1
+    if min_pass_rate is not None and summary["pass_rate"] < min_pass_rate:
+        print(f"QUALITY GATE FAILED: pass rate {summary['pass_rate']:.1%} < required {min_pass_rate:.1%}")
+        return 2
+    if min_pass_rate is not None:
+        print(f"QUALITY GATE PASSED: pass rate {summary['pass_rate']:.1%} >= {min_pass_rate:.1%}")
+    return 0
 
 
 def write_reports(meta: dict, rows: list[dict], label: str | None) -> dict:

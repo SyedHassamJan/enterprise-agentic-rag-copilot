@@ -1,0 +1,92 @@
+# Continuous Integration: runs on every push to main and every pull request.
+# No secrets needed: the test suite fakes the LLM, vector store and web search.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+# A newer push to the same branch cancels the older, now-irrelevant run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ruff==0.13.3
+      - run: ruff check . --output-format=github
+
+  test:
+    name: Tests (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+      - name: Run tests
+        run: pytest -q --junitxml=test-results.xml
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-py${{ matrix.python-version }}
+          path: test-results.xml
+
+  docker:
+    name: Docker build + smoke test
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true            # keep the image locally for the smoke test
+          push: false
+          tags: employee-support-copilot:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: Start container
+        run: docker run -d --name app -p 8080:8080 employee-support-copilot:ci
+      - name: Wait until healthy
+        run: |
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/api/health; then echo; exit 0; fi
+            sleep 2
+          done
+          echo "Container never became healthy"; exit 1
+      - name: Check endpoints
+        run: |
+          curl -fsS http://localhost:8080/ | grep -q "Employee Help"
+          curl -fsS http://localhost:8080/api/departments
+          # No API keys in CI, so readiness must report not-ready (503), proving the probe works.
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/ready)" = "503"
+          # The container must not run as root.
+          test "$(docker exec app id -u)" != "0"
+      - name: Container logs
+        if: always()
+        run: docker logs app

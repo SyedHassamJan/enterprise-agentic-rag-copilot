@@ -1,0 +1,21 @@
+# Local container run:
+#   docker compose up --build                               # build + start on http://localhost:8080
+#   docker compose run --rm app python ingest_sample_kb.py  # one-off: index the sample knowledge base
+#   docker compose logs -f app                              # follow logs
+#   docker compose down                                     # stop (volume keeps audit log + uploads)
+services:
+  app:
+    build:
+      context: .
+    image: employee-support-copilot:local
+    env_file: .env              # OPENAI_API_KEY, PINECONE_API_KEY, TAVILY_API_KEY, ADMIN_API_KEY
+    environment:
+      APP_ENV: production
+    ports:
+      - "8080:8080"
+    volumes:
+      - app-data:/app/var       # audit.db + uploaded files survive restarts and rebuilds
+    restart: unless-stopped
+
+volumes:
+  app-data:

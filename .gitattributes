@@ -1,0 +1,5 @@
+# Normalise line endings: Linux containers and CI runners need LF (a CRLF shell line breaks).
+* text=auto eol=lf
+*.pdf binary
+*.png binary
+*.db binary

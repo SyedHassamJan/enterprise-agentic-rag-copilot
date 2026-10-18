@@ -1,10 +1,14 @@
 # Enterprise Employee Support Agentic RAG Copilot
 
+![CI](https://github.com/SyedHassamJan/Enterprise-Employee-Support-Agentic-RAG-Copilot/actions/workflows/ci.yml/badge.svg)
+![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-3776AB)
+![License](https://img.shields.io/badge/license-Apache%202.0-lightgrey)
+
 One internal copilot for **IT support and HR policy** questions. A LangGraph agent routes each question to the right department's knowledge base, the web, or plain conversation. It retrieves only what the user is **permitted** to read, re-ranks the evidence, grades it before answering, and answers **only from cited sources**. When it can't find reliable evidence, it says so and escalates to the right team.
 
 The system is measured on a 72-question evaluation set: the pass rate rose from **84.8% to 97.2%**, and faithfulness and permission-enforcement both reached **100%**.
 
-**Stack:** LangGraph · LangChain · OpenAI · Pinecone (vector search + hosted reranker) · Tavily · FastAPI · SQLite · Docker · pytest
+**Stack:** LangGraph · LangChain · OpenAI · Pinecone (vector search + hosted reranker) · Tavily · FastAPI · SQLite · Docker · GitHub Actions · pytest
 
 ---
 
@@ -94,7 +98,7 @@ Reports for each stage are in [eval/reports/](eval/reports/). Stage 1 was re-sco
 python -m eval.run_eval --label my_experiment         # full run -> eval/reports/my_experiment.md
 python -m eval.run_eval --category access_control      # one category
 python -m eval.run_eval --rescore eval/reports/01_baseline.json   # re-apply current checks to saved answers
-python -m pytest                                        # 28 offline tests: fakes, no API keys
+python -m pytest                                        # 32 offline tests: fakes, no API keys
 ```
 
 ---
@@ -140,9 +144,26 @@ python run.py                        # http://127.0.0.1:8080   (API docs: /docs)
 ### Docker
 
 ```powershell
-docker build -t employee-copilot .
-docker run --env-file .env -p 8080:8080 employee-copilot
+docker compose up --build -d                            # multi-stage, non-root image with a health check
+docker compose run --rm app python ingest_sample_kb.py  # one-off ingestion
 ```
+
+---
+
+## DevOps
+
+| Pipeline | Trigger | What it does |
+|---|---|---|
+| [CI](.github/workflows/ci.yml) | Every push and PR | Ruff lint → pytest on Python 3.11 and 3.12 → Docker build + smoke test (health, UI, readiness, non-root) |
+| [Release](.github/workflows/release.yml) | Tag `vX.Y.Z` | Build and push to GHCR (`version`, `major.minor`, `sha`, `latest`) → deploy hook behind a protected `production` environment |
+| [Evaluation](.github/workflows/evaluation.yml) | Manual | 72 questions against the real APIs; **fails below a 90% pass rate**; report uploaded as an artifact |
+| [Dependabot](.github/dependabot.yml) | Weekly | Update PRs for pip, Actions and the Docker base image |
+
+The step-by-step setup is in the **[DevOps guide](docs/devops-guide.md)**.
+
+## Documentation
+
+[Architecture](docs/architecture.md) · [Configuration](docs/configuration.md) · [API](docs/api.md) · [Knowledge base](docs/knowledge-base.md) · [Security](docs/security.md) · [Evaluation](docs/evaluation.md) · [Operations](docs/operations.md) · [DevOps guide](docs/devops-guide.md) · [Changelog](CHANGELOG.md)
 
 ---
 
@@ -173,8 +194,12 @@ app/
   services/audit.py      SQLite audit log with schema migration
 data/sample_kb/          23 documents (IT + HR), incl. archived and restricted ones
 eval/                    golden set, runner + LLM judge, reports per iteration
-tests/                   28 offline pytest tests (fake LLM / vector store / search)
-templates/, static/      web UI (user picker, trace, metrics, upload)
+tests/                   32 offline pytest tests (fake LLM / vector store / search)
+templates/, static/      web UI (footnoted answers, decision trace, timing, user switcher)
+scripts/healthcheck.py   container health probe
+docs/                    architecture, API, security, evaluation, operations, DevOps guide
+.github/                 CI, release, evaluation workflows; Dependabot
+Dockerfile, docker-compose.yml
 ```
 
 ## Roadmap
@@ -201,6 +226,7 @@ This project builds on two single-department reference projects by **Bappy Ahmed
 - **Engineering:**
   - Idempotent ingestion; no automatic index deletion.
   - Replaces the deprecated `langchain-community` loaders.
-  - 28 offline tests.
+  - 32 offline tests, ruff-clean.
+- **DevOps:** a multi-stage non-root Docker image, Compose, CI (lint, test matrix, image smoke test), tag-driven release to GHCR with a deploy hook, an LLM evaluation quality gate, and Dependabot.
   - An evaluation harness: 72-question golden set, LLM faithfulness judge, report labels, and re-scoring.
 - **Data and docs:** the knowledge base expanded from 4 to 23 documents with deliberate traps, a UI with user picker and metrics, and a rewritten README.
