@@ -34,7 +34,10 @@
           <span class="status-dot"></span>
           <span>Enterprise Knowledge Copilot</span>
         </div>
-        <span class="pill">Agentic RAG</span>
+        <div class="user-picker">
+          <label for="userSelect">Signed in as</label>
+          <select id="userSelect" aria-label="Demo user"></select>
+        </div>
       </header>
 
       <section id="chat" class="chat-area">
@@ -68,6 +71,7 @@
       <div class="source-box">
         <span>Final Source</span>
         <strong id="sourceUsed">—</strong>
+        <span id="metrics" class="metrics"></span>
       </div>
     </aside>
   </div>
@@ -77,6 +81,13 @@
       <div class="modal-head"><h2>Ingest Company Document</h2><button id="closeUpload">×</button></div>
       <p class="muted">Choose the owning department, then upload PDF, TXT, Markdown, or DOCX. The document is chunked, embedded, and indexed into that department's Pinecone namespace.</p>
       <select id="departmentSelect" aria-label="Department"></select>
+      <select id="accessSelect" aria-label="Who can read it">
+        <option value="">Access: from document header (default all employees)</option>
+        <option value="all">Access: all employees</option>
+        <option value="managers">Access: managers</option>
+        <option value="hr_staff">Access: HR staff only</option>
+        <option value="it_staff">Access: IT staff only</option>
+      </select>
       <input id="adminKey" type="password" placeholder="Admin API key" />
       <input id="fileInput" type="file" accept=".pdf,.txt,.md,.docx" />
       <button id="uploadBtn" class="send-btn full">Index Document</button>

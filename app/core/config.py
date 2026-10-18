@@ -13,7 +13,10 @@ class Settings(BaseSettings):
     pinecone_index_name: str = "fde-employee-support-rag"
     embedding_model: str = "text-embedding-3-small"
     openai_model: str = "gpt-4o-mini"
-    top_k: int = 4
+    top_k: int = 4                       # chunks kept per selected department after reranking
+    fetch_k: int = 12                    # vector-search candidates per department before reranking
+    rerank_enabled: bool = True
+    rerank_model: str = "bge-reranker-v2-m3"  # Pinecone-hosted cross-encoder
     max_retries: int = 1
     admin_api_key: str = "change-me"
     audit_db_path: str = str(BASE_DIR / "data" / "audit.db")

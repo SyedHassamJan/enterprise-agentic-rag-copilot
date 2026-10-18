@@ -20,6 +20,7 @@ class WebGrade(BaseModel):
 
 class AgentState(TypedDict):
     question: str
+    user_role: str
     current_query: str
     route: str
     departments: List[str]
@@ -32,3 +33,4 @@ class AgentState(TypedDict):
     retry_count: int
     trace: List[str]
     citations: List[dict]
+    timings: List[dict]

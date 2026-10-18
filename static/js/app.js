@@ -3,6 +3,9 @@ const form = document.getElementById('chatForm');
 const question = document.getElementById('question');
 const trace = document.getElementById('trace');
 const sourceUsed = document.getElementById('sourceUsed');
+const metrics = document.getElementById('metrics');
+const userSelect = document.getElementById('userSelect');
+fetch('/api/users').then(r=>r.json()).then(list=>{userSelect.innerHTML=list.map(u=>`<option value="${escapeHtml(u.username)}">${escapeHtml(u.name)} (${escapeHtml(u.role.replace('_',' '))})</option>`).join('');}).catch(()=>{});
 
 function escapeHtml(s=''){return s.replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
 function formatText(s=''){return escapeHtml(s).replace(/\n/g,'<br>');}
@@ -14,13 +17,14 @@ function addMessage(role, text, source='', citations=[]){
 }
 function renderTrace(items=[]){trace.innerHTML=items.length?items.map(x=>`<div class="trace-item">${escapeHtml(x)}</div>`).join(''):'<div class="empty">No trace.</div>';}
 async function askAgent(q){
-  addMessage('user',q); question.value=''; renderTrace(['Running LangGraph workflow...']); sourceUsed.textContent='Running';
+  addMessage('user',q); question.value=''; renderTrace(['Running LangGraph workflow...']); sourceUsed.textContent='Running'; metrics.textContent='';
   const btn=form.querySelector('button'); btn.disabled=true;
   try{
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:q})});
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','X-Demo-User':userSelect.value||''},body:JSON.stringify({question:q})});
     const data=await res.json(); if(!res.ok) throw new Error(data.detail||'Request failed');
     const depts=(data.departments||[]).map(d=>d.toUpperCase()).join(' + '); const src=depts?`${data.source_used} · ${depts}`:data.source_used;
     addMessage('assistant',data.answer,src,data.citations||[]); renderTrace(data.trace||[]); sourceUsed.textContent=src;
+    if(data.metrics){metrics.textContent=`${(data.metrics.latency_ms/1000).toFixed(1)}s · ${data.metrics.total_tokens.toLocaleString()} tokens · ${data.user.role.replace('_',' ')}`;}
   }catch(e){addMessage('assistant',`Error: ${e.message}`); renderTrace(['Request failed']); sourceUsed.textContent='Error';}
   finally{btn.disabled=false;}
 }
@@ -35,6 +39,6 @@ document.getElementById('closeUpload').onclick=()=>modal.classList.add('hidden')
 document.getElementById('uploadBtn').onclick=async()=>{
   const file=document.getElementById('fileInput').files[0]; const key=document.getElementById('adminKey').value; const status=document.getElementById('uploadStatus');
   if(!file){status.textContent='Choose a file first.'; return;}
-  status.textContent='Indexing document...'; const fd=new FormData(); fd.append('file',file); fd.append('department',deptSelect.value);
-  try{const r=await fetch('/api/ingest',{method:'POST',headers:{'X-Admin-Key':key},body:fd}); const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Upload failed'); status.textContent=`Indexed ${d.file} into ${d.department.toUpperCase()}: ${d.chunks} chunks.`;}catch(e){status.textContent=`Error: ${e.message}`;}
+  status.textContent='Indexing document...'; const fd=new FormData(); fd.append('file',file); fd.append('department',deptSelect.value); fd.append('access',document.getElementById('accessSelect').value);
+  try{const r=await fetch('/api/ingest',{method:'POST',headers:{'X-Admin-Key':key},body:fd}); const d=await r.json(); if(!r.ok) throw new Error(d.detail||'Upload failed'); status.textContent=`Indexed ${d.file} into ${d.department.toUpperCase()} (access: ${d.access}): ${d.chunks} chunks.`;}catch(e){status.textContent=`Error: ${e.message}`;}
 };

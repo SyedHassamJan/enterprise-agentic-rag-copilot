@@ -8,6 +8,7 @@ from app.core.config import get_settings
 settings = get_settings()
 
 _embeddings = None
+_pc = None
 _index = None
 _vectorstores: dict[str, PineconeVectorStore] = {}
 
@@ -50,15 +51,22 @@ def get_embeddings():
     return _embeddings
 
 
+def get_pinecone() -> Pinecone:
+    global _pc
+    if _pc is None:
+        if not settings.pinecone_api_key:
+            raise RuntimeError("PINECONE_API_KEY is missing")
+        _pc = Pinecone(api_key=settings.pinecone_api_key)
+    return _pc
+
+
 def ensure_index():
     global _index
     if _index is not None:
         return _index
-    if not settings.pinecone_api_key:
-        raise RuntimeError("PINECONE_API_KEY is missing")
 
     desired_dimension = get_embedding_dimension()
-    pc = Pinecone(api_key=settings.pinecone_api_key)
+    pc = get_pinecone()
     names = [x["name"] for x in pc.list_indexes()]
 
     if settings.pinecone_index_name in names:
@@ -94,8 +102,8 @@ def get_vectorstore(namespace: str) -> PineconeVectorStore:
     return _vectorstores[namespace]
 
 
-def get_retriever(namespace: str):
-    return get_vectorstore(namespace).as_retriever(search_kwargs={"k": settings.top_k})
+def search(namespace: str, query: str, k: int, metadata_filter: dict | None = None):
+    return get_vectorstore(namespace).similarity_search(query, k=k, filter=metadata_filter)
 
 
 def _source_prefix(source: str) -> str:

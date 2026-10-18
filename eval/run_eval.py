@@ -110,11 +110,12 @@ def judge_faithfulness(judge, question: str, evidence: str, answer: str):
 
 
 def evaluate(item: dict, judge) -> dict:
-    row = {"id": item["id"], "category": item["category"], "question": item["question"], "checks": {}}
+    row = {"id": item["id"], "category": item["category"], "question": item["question"],
+           "role": item.get("role", "employee"), "checks": {}}
     try:
         with get_usage_metadata_callback() as cb:
             t0 = time.perf_counter()
-            result = ask(item["question"])
+            result = ask(item["question"], user_role=item.get("role", "employee"))
             row["latency_s"] = round(time.perf_counter() - t0, 2)
         row["tokens"], row["cost_usd"] = usage_cost(cb.usage_metadata)
     except Exception as exc:  # a crash is a failed question, not a failed eval run
@@ -277,7 +278,7 @@ def markdown_report(meta: dict, summary: dict, rows: list[dict]) -> str:
         lines.append("None.")
     for row in failures:
         failed = [k for k, v in row.get("checks", {}).items() if not v]
-        lines.append(f"### {row['id']} ({row['category']}): {row['question']}")
+        lines.append(f"### {row['id']} ({row['category']}, as {row.get('role', 'employee')}): {row['question']}")
         if "error" in row:
             lines.append(f"- **Error:** `{row['error']}`")
         else:
