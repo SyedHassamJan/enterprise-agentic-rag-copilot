@@ -148,7 +148,6 @@ activemq-data/
 *.sage.py
 
 # Environments
-.env
 .envrc
 .venv
 env/
@@ -221,4 +220,5 @@ __marimo__/
 data/audit.db
 uploads/it/
 uploads/hr/
-.vscode/
+config.bat
+node_modules
