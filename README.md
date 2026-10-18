@@ -1,6 +1,6 @@
 # Enterprise Employee Support Agentic RAG Copilot
 
-![CI](https://github.com/SyedHassamJan/Enterprise-Employee-Support-Agentic-RAG-Copilot/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/SyedHassamJan/enterprise-agentic-rag-copilot/actions/workflows/ci.yml/badge.svg)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12-3776AB)
 ![License](https://img.shields.io/badge/license-Apache%202.0-lightgrey)
 

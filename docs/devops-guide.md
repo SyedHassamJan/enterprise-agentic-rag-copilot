@@ -128,10 +128,10 @@ Key ideas: `env_file` injects secrets at run time; the **named volume** `app-dat
 
 ## Part 5: Put the project on GitHub
 
-1. Create an **empty** repository at https://github.com/new. Name it `Enterprise-Employee-Support-Agentic-RAG-Copilot`, make it **Public**, and don't add a README, .gitignore or licence.
+1. Create an **empty** repository at https://github.com/new. Name it `enterprise-agentic-rag-copilot`, make it **Public**, and don't add a README, .gitignore or licence.
 2. Push:
    ```powershell
-   git remote add origin https://github.com/<your-username>/Enterprise-Employee-Support-Agentic-RAG-Copilot.git
+   git remote add origin https://github.com/<your-username>/enterprise-agentic-rag-copilot.git
    git push -u origin main
    ```
 3. Confirm `.env` is **not** on GitHub. It's listed in `.gitignore`.
@@ -169,7 +169,7 @@ pytest -q
 ✅ Checkpoint: all three jobs are green. Add the badge to the top of the README:
 
 ```markdown
-![CI](https://github.com/<your-username>/Enterprise-Employee-Support-Agentic-RAG-Copilot/actions/workflows/ci.yml/badge.svg)
+![CI](https://github.com/<your-username>/enterprise-agentic-rag-copilot/actions/workflows/ci.yml/badge.svg)
 ```
 
 ### Protect `main` (recommended)
@@ -204,7 +204,7 @@ The `publish` job then:
 Pull it anywhere:
 
 ```powershell
-docker pull ghcr.io/<your-username>/enterprise-employee-support-agentic-rag-copilot:1.1.0
+docker pull ghcr.io/<your-username>/enterprise-agentic-rag-copilot:1.1.0
 ```
 
 Image names on GHCR are lowercase, and the workflow lowercases them automatically.
