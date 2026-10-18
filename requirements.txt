@@ -11,7 +11,7 @@ langchain-tavily==0.2.18
 langchain-pinecone==0.2.13
 langchain-text-splitters==1.1.2
 
-pinecone==7.3.0
+pinecone==10.0.0
 openai==3.3.1
 
 pypdf==6.16.2
