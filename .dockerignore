@@ -17,7 +17,6 @@ venv
 tests
 eval
 docs
-Agentic-RAG-demo
 uploads
 data/audit.db
 *.log

@@ -10,5 +10,3 @@
 | [Evaluation](evaluation.md) | Golden set format, metrics, LLM judge, running and reading reports |
 | [Operations](operations.md) | Running locally, logs, audit queries, troubleshooting |
 | [DevOps guide](devops-guide.md) | **Step by step:** Docker, Docker Compose, CI, CD, deployment |
-
-Reference material from the original course is in [reference/](reference/).
