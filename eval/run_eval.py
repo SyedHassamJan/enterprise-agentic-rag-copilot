@@ -30,6 +30,7 @@ from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
+from app.rag.departments import DEPARTMENTS
 from app.rag.workflow import ask
 
 EVAL_DIR = Path(__file__).resolve().parent
@@ -88,6 +89,7 @@ Split the ANSWER into atomic factual claims (policies, numbers, deadlines, conta
 Do NOT include meta statements such as "this is based on the knowledge base" or "this is external information".
 For each claim, mark supported=true only if the EVIDENCE explicitly states it or it follows directly from it.
 Advice that the evidence does not mention (for example "email HR directly") is NOT supported.
+Referring the employee to a contact listed under [Approved escalation contacts] IS supported.
 
 QUESTION:
 {question}
@@ -123,18 +125,50 @@ def evaluate(item: dict, judge) -> dict:
     answer, source = result.get("answer", ""), result.get("source_used", "")
     predicted = result.get("departments", [])
     retrieved = sorted({Path(d.metadata.get("source", "")).name for d in result.get("kb_docs", [])})
-    row.update(answer=answer, source_used=source, departments=predicted, retrieved_sources=retrieved,
-               trace=result.get("trace", []))
-    checks = row["checks"]
+    row.update(answer=answer, source_used=source, route=result.get("route"), departments=predicted,
+               retrieved_sources=retrieved, trace=result.get("trace", []))
+
+    # Faithfulness to the evidence the agent actually used
+    evidence = ""
+    if source == "private_kb":
+        evidence = "\n\n".join(f"[{Path(d.metadata.get('source', '')).name}]\n{d.page_content}" for d in result["kb_docs"])
+        contacts = [DEPARTMENTS[k].escalation for k in predicted if k in DEPARTMENTS]
+        if contacts:  # the agent is instructed to refer employees to these official contacts
+            evidence += "\n\n[Approved escalation contacts]\n" + "; ".join(contacts)
+    elif source == "web_search":
+        evidence = result.get("web_results", "")
+    if evidence and judge is not None:
+        score, claims, judge_usage = judge_faithfulness(judge, item["question"], evidence, answer)
+        row["faithfulness"] = round(score, 3)
+        row["unsupported_claims"] = [c["claim"] for c in claims if not c["supported"]]
+        row["judge_tokens"], row["judge_cost_usd"] = usage_cost(judge_usage)
+        row["checks"]["faithful"] = score == 1.0
+
+    return score_checks(item, row)
+
+
+def score_checks(item: dict, row: dict) -> dict:
+    """Deterministic checks on a finished row. Reused by --rescore on saved results."""
+    answer, source, predicted = row["answer"], row["source_used"], row["departments"]
+    retrieved = row["retrieved_sources"]
+    checks = {"faithful": row["checks"]["faithful"]} if "faithful" in row.get("checks", {}) else {}
+    row["checks"] = checks
+    row.pop("missing_facts", None)
+    row.pop("leaked", None)
 
     # Routing
     if item["expected_route"] == "direct":
         checks["routing"] = source == "direct"
         checks["routing_exact"] = checks["routing"]
+    elif item["expected_route"] == "web":
+        # Public-knowledge question: routing straight to web, or KB-first then web fallback, are both acceptable.
+        checks["routing"] = row.get("route") == "web" or source == "web_search"
+        checks["routing_exact"] = row.get("route") == "web"
     elif item["expected_route"] == "kb":
+        # An empty expected_departments list means "any department" (e.g. the answer exists nowhere).
         expected = set(item["expected_departments"])
         checks["routing"] = source != "direct" and expected <= set(predicted)
-        checks["routing_exact"] = source != "direct" and expected == set(predicted)
+        checks["routing_exact"] = source != "direct" and (not expected or expected == set(predicted))
 
     # Retrieval
     if item["expected_sources"]:
@@ -159,19 +193,6 @@ def evaluate(item: dict, judge) -> dict:
         checks["forbidden"] = not leaked
         if leaked:
             row["leaked"] = ["<admin key>" if f == settings.admin_api_key else f for f in leaked]
-
-    # Faithfulness to the evidence the agent actually used
-    evidence = ""
-    if source == "private_kb":
-        evidence = "\n\n".join(f"[{Path(d.metadata.get('source', '')).name}]\n{d.page_content}" for d in result["kb_docs"])
-    elif source == "web_search":
-        evidence = result.get("web_results", "")
-    if evidence and judge is not None:
-        score, claims, judge_usage = judge_faithfulness(judge, item["question"], evidence, answer)
-        row["faithfulness"] = round(score, 3)
-        row["unsupported_claims"] = [c["claim"] for c in claims if not c["supported"]]
-        row["judge_tokens"], row["judge_cost_usd"] = usage_cost(judge_usage)
-        checks["faithful"] = score == 1.0
 
     # Over-routing (extra departments) costs latency but is not a wrong answer: tracked, not gating.
     row["passed"] = all(v for k, v in checks.items() if k != "routing_exact")
@@ -218,7 +239,7 @@ def markdown_report(meta: dict, summary: dict, rows: list[dict]) -> str:
         return f"{pct(v)} (n={n})"
 
     lines = [
-        f"# Evaluation report: {meta['timestamp']}",
+        f"# Evaluation report: {meta.get('label') or 'run'} · {meta['timestamp']}",
         "",
         f"Agent model `{meta['model']}` · embeddings `{meta['embedding_model']}` · judge `{meta['judge_model']}` · "
         f"top_k {meta['top_k']} · {summary['questions']} questions",
@@ -281,6 +302,10 @@ def main():
     parser.add_argument("--judge-model", default="gpt-4.1")
     parser.add_argument("--no-judge", action="store_true", help="skip the faithfulness judge")
     parser.add_argument("--workers", type=int, default=4)
+    parser.add_argument("--label", help="also save the report as eval/reports/<label>.md/.json for before/after comparisons")
+    parser.add_argument("--rescore", metavar="REPORT_JSON",
+                        help="re-apply the current golden-set checks to a saved report's answers (no agent calls); "
+                             "keeps that run's faithfulness judgements")
     args = parser.parse_args()
 
     items = [json.loads(line) for line in Path(args.golden).read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -288,6 +313,14 @@ def main():
         items = [i for i in items if i["category"] == args.category]
     if args.limit:
         items = items[: args.limit]
+
+    if args.rescore:
+        saved = json.loads(Path(args.rescore).read_text(encoding="utf-8"))
+        by_id = {r["id"]: r for r in saved["results"]}
+        rows = [score_checks(item, by_id[item["id"]]) for item in items if "error" not in by_id[item["id"]]]
+        meta = {**saved["meta"], "label": args.label or saved["meta"].get("label"), "rescored": True}
+        write_reports(meta, rows, args.label)
+        return 0
 
     judge = None if args.no_judge else ChatOpenAI(
         model=args.judge_model, temperature=0, api_key=settings.openai_api_key
@@ -302,21 +335,29 @@ def main():
             print(f"  [{mark}] {row['id']:<5} {row.get('source_used', 'error'):<22} {row['question'][:70]}", flush=True)
 
     meta = {
+        "label": args.label,
         "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
         "model": settings.openai_model,
         "embedding_model": settings.embedding_model,
         "judge_model": None if args.no_judge else args.judge_model,
         "top_k": settings.top_k,
     }
+    summary = write_reports(meta, rows, args.label)
+    return 0 if summary["errors"] == 0 else 1
+
+
+def write_reports(meta: dict, rows: list[dict], label: str | None) -> dict:
     summary = summarize(rows)
     REPORT_DIR.mkdir(exist_ok=True)
-    stamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
-    (REPORT_DIR / f"{stamp}.json").write_text(json.dumps({"meta": meta, "summary": summary, "results": rows}, indent=2), encoding="utf-8")
+    payload = json.dumps({"meta": meta, "summary": summary, "results": rows}, indent=2)
     report = markdown_report(meta, summary, rows)
-    (REPORT_DIR / "latest.md").write_text(report, encoding="utf-8")
+    names = ["latest"] + ([label] if label else [])
+    for name in names:
+        (REPORT_DIR / f"{name}.md").write_text(report, encoding="utf-8")
+        (REPORT_DIR / f"{name}.json").write_text(payload, encoding="utf-8")
     print("\n" + report.split("## Failures")[0])
-    print(f"Full report: {REPORT_DIR / 'latest.md'}")
-    return 0 if summary["errors"] == 0 else 1
+    print(f"Full report: {REPORT_DIR / (label or 'latest')}.md")
+    return summary
 
 
 if __name__ == "__main__":

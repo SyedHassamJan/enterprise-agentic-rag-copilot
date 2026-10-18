@@ -19,7 +19,7 @@ DEPARTMENTS: dict[str, Department] = {
         label="IT Support",
         namespace="it-kb",
         topics="VPN, passwords, MFA, laptops and devices, software installation, email, "
-               "security incidents, troubleshooting, IT tickets",
+               "security incidents, troubleshooting, IT ticket priorities (P1-P4), BYOD/mobile, data storage",
         escalation="the IT Service Desk",
         validation="IT validation before changing company-managed systems",
     ),
@@ -28,7 +28,8 @@ DEPARTMENTS: dict[str, Department] = {
         label="HR Policy",
         namespace="hr-kb",
         topics="leave and holidays, sick leave, remote work, working hours, payroll, benefits, "
-               "onboarding, offboarding, employee records, expenses, code of conduct",
+               "onboarding, offboarding, employee records, expenses and travel, code of conduct, "
+               "performance reviews, grievances, learning budget, company holidays, payroll issue priorities (P1-P4)",
         escalation="the HR team",
         validation="HR validation before being treated as company policy or employment guidance",
     ),

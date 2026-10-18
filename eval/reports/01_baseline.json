@@ -4,7 +4,9 @@
     "model": "gpt-4o-mini",
     "embedding_model": "text-embedding-3-small",
     "judge_model": "gpt-4.1",
-    "top_k": 4
+    "top_k": 4,
+    "label": "01_baseline",
+    "rescored": true
   },
   "summary": {
     "questions": 66,
@@ -15,7 +17,7 @@
       65
     ],
     "routing_exact": [
-      0.8615384615384616,
+      0.8307692307692308,
       65
     ],
     "retrieval_hit": [
@@ -50,12 +52,12 @@
       "category": "it",
       "question": "How do I connect to the company VPN from home?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 8.37,
       "tokens": 1695,
@@ -87,12 +89,12 @@
       "category": "it",
       "question": "What is the minimum password length?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 7.75,
       "tokens": 1597,
@@ -124,12 +126,12 @@
       "category": "it",
       "question": "What happens if I fail to log in five times?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 7.7,
       "tokens": 1643,
@@ -161,12 +163,12 @@
       "category": "it",
       "question": "I clicked a link in a phishing email and typed my password. What should I do right now?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 7.63,
       "tokens": 1804,
@@ -199,12 +201,12 @@
       "category": "it",
       "question": "How do I report a suspicious email?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 5.28,
       "tokens": 1599,
@@ -236,12 +238,12 @@
       "category": "it",
       "question": "Can I use Dropbox to share project files with a vendor?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": false,
         "retrieval_hit": true,
         "answer_source": false,
-        "facts": false,
-        "faithful": true
+        "facts": false
       },
       "latency_s": 6.84,
       "tokens": 4522,
@@ -268,26 +270,26 @@
         "Web evidence grade \u2192 GOOD",
         "Answer generation \u2192 WEB SEARCH"
       ],
-      "missing_facts": [
-        "OneDrive|SharePoint"
-      ],
       "faithfulness": 1.0,
       "unsupported_claims": [],
       "judge_tokens": 1819,
       "judge_cost_usd": 0.004448,
-      "passed": false
+      "passed": false,
+      "missing_facts": [
+        "OneDrive|SharePoint"
+      ]
     },
     {
       "id": "it07",
       "category": "it",
       "question": "Am I allowed to paste customer data into a public AI chatbot like ChatGPT?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": false,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.94,
       "tokens": 2928,
@@ -324,12 +326,12 @@
       "category": "it",
       "question": "How long do deleted OneDrive files stay in the recycle bin?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 4.75,
       "tokens": 1583,
@@ -360,12 +362,12 @@
       "category": "it",
       "question": "Can I use a USB flash drive on my work laptop?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.8,
       "tokens": 1640,
@@ -398,12 +400,12 @@
       "category": "it",
       "question": "What phone OS versions do I need to get company email on my personal phone?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.62,
       "tokens": 1537,
@@ -434,12 +436,12 @@
       "category": "it",
       "question": "If I enroll my personal phone, can IT see my personal photos?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.63,
       "tokens": 1662,
@@ -471,12 +473,12 @@
       "category": "it",
       "question": "Can I install Slack to chat with my team?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.19,
       "tokens": 1640,
@@ -509,12 +511,12 @@
       "category": "it",
       "question": "How long does it take to get Adobe Acrobat Pro and who needs to approve it?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": false,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.79,
       "tokens": 2608,
@@ -550,12 +552,12 @@
       "category": "it",
       "question": "When will a remote new hire receive their laptop?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": false,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 4.11,
       "tokens": 2839,
@@ -592,12 +594,12 @@
       "category": "it",
       "question": "How soon after my first login do I have to set up MFA?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.33,
       "tokens": 1612,
@@ -629,12 +631,12 @@
       "category": "it",
       "question": "My laptop is really slow. What should I check?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 4.28,
       "tokens": 1734,
@@ -667,12 +669,12 @@
       "category": "hr",
       "question": "How many annual leave days do employees receive?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.39,
       "tokens": 1646,
@@ -704,12 +706,12 @@
       "category": "hr",
       "question": "How much unused annual leave can I carry over, and until when?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.21,
       "tokens": 1479,
@@ -741,12 +743,12 @@
       "category": "hr",
       "question": "How many paid sick days do I get per year?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.43,
       "tokens": 1482,
@@ -778,12 +780,12 @@
       "category": "hr",
       "question": "How many days per week can I work remotely?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.1,
       "tokens": 1786,
@@ -816,12 +818,12 @@
       "category": "hr",
       "question": "When is salary paid each month?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.54,
       "tokens": 1534,
@@ -854,12 +856,12 @@
       "category": "hr",
       "question": "How much paid parental leave does a primary caregiver get?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.66,
       "tokens": 1654,
@@ -890,12 +892,12 @@
       "category": "hr",
       "question": "We are adopting a child. How long do I need to have worked here to qualify for parental leave?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.32,
       "tokens": 1693,
@@ -926,12 +928,12 @@
       "category": "hr",
       "question": "What is the daily meal allowance for domestic business travel?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.56,
       "tokens": 1758,
@@ -994,22 +996,22 @@
         "Web evidence grade \u2192 WEAK",
         "Stopped \u2192 insufficient reliable evidence"
       ],
+      "passed": false,
       "missing_facts": [
         "economy"
-      ],
-      "passed": false
+      ]
     },
     {
       "id": "hr10",
       "category": "hr",
       "question": "When do promotions take effect?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.37,
       "tokens": 1708,
@@ -1041,12 +1043,12 @@
       "category": "hr",
       "question": "How long does a performance improvement plan last?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.3,
       "tokens": 1455,
@@ -1078,13 +1080,13 @@
       "category": "outdated_trap",
       "question": "What is the company's 401(k) match?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
         "facts": true,
-        "forbidden": true,
-        "faithful": true
+        "forbidden": true
       },
       "latency_s": 3.34,
       "tokens": 1663,
@@ -1116,13 +1118,13 @@
       "category": "outdated_trap",
       "question": "How much is the yearly wellness allowance?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
         "facts": true,
-        "forbidden": true,
-        "faithful": true
+        "forbidden": true
       },
       "latency_s": 3.07,
       "tokens": 1645,
@@ -1154,13 +1156,13 @@
       "category": "outdated_trap",
       "question": "When is benefits open enrollment?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
         "facts": true,
-        "forbidden": true,
-        "faithful": true
+        "forbidden": true
       },
       "latency_s": 3.4,
       "tokens": 1646,
@@ -1192,13 +1194,13 @@
       "category": "outdated_trap",
       "question": "What percentage of my medical premium does the company pay?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
         "facts": true,
-        "forbidden": true,
-        "faithful": true
+        "forbidden": true
       },
       "latency_s": 3.07,
       "tokens": 1634,
@@ -1230,12 +1232,12 @@
       "category": "hr",
       "question": "How can I report harassment anonymously?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.41,
       "tokens": 1617,
@@ -1267,12 +1269,12 @@
       "category": "hr",
       "question": "How big is my yearly learning budget?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.51,
       "tokens": 1441,
@@ -1304,12 +1306,12 @@
       "category": "hr",
       "question": "Is Juneteenth a company holiday in 2026, and what day of the week is it?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.14,
       "tokens": 1830,
@@ -1341,12 +1343,12 @@
       "category": "hr",
       "question": "How many floating holidays do I get?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.24,
       "tokens": 1749,
@@ -1378,12 +1380,12 @@
       "category": "hr",
       "question": "How quickly does HR acknowledge a formal grievance?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 2.97,
       "tokens": 1500,
@@ -1415,12 +1417,12 @@
       "category": "cross_department",
       "question": "I'm starting remote work next week. What do I need to set up and what are the rules?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": false,
-        "faithful": true
+        "facts": false
       },
       "latency_s": 6.71,
       "tokens": 3262,
@@ -1445,26 +1447,26 @@
         "KB evidence grade \u2192 GOOD",
         "Answer generation \u2192 PRIVATE KB"
       ],
-      "missing_facts": [
-        "2 days|two days"
-      ],
       "faithfulness": 1.0,
       "unsupported_claims": [],
       "judge_tokens": 2469,
       "judge_cost_usd": 0.00921,
-      "passed": false
+      "passed": false,
+      "missing_facts": [
+        "2 days|two days"
+      ]
     },
     {
       "id": "x02",
       "category": "cross_department",
       "question": "Can I expense a new monitor for my home office?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 4.21,
       "tokens": 3213,
@@ -1500,12 +1502,12 @@
       "category": "cross_department",
       "question": "I'm leaving the company. When will my accounts be disabled and how long do I have to return my laptop?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 4.14,
       "tokens": 2830,
@@ -1543,12 +1545,12 @@
       "category": "cross_department",
       "question": "I'm a new hire starting Monday. What do I need to do on day one for IT and HR?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 5.19,
       "tokens": 3185,
@@ -1584,12 +1586,12 @@
       "category": "cross_department",
       "question": "Do I need the VPN to open the HR portal from home?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": false,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 4.11,
       "tokens": 2863,
@@ -1624,12 +1626,12 @@
       "category": "cross_department",
       "question": "Can I get reimbursed for my personal phone plan since I use it for work email?",
       "checks": {
+        "faithful": true,
         "routing": false,
         "routing_exact": false,
         "retrieval_hit": true,
         "answer_source": false,
-        "facts": false,
-        "faithful": true
+        "facts": false
       },
       "latency_s": 6.01,
       "tokens": 4132,
@@ -1651,26 +1653,26 @@
         "Web evidence grade \u2192 GOOD",
         "Answer generation \u2192 WEB SEARCH"
       ],
-      "missing_facts": [
-        "not reimburs|isn't reimburs|not be reimbursed|cannot be reimbursed|non-reimbursable|not eligible|does not reimburse|doesn't reimburse"
-      ],
       "faithfulness": 1.0,
       "unsupported_claims": [],
       "judge_tokens": 1959,
       "judge_cost_usd": 0.00474,
-      "passed": false
+      "passed": false,
+      "missing_facts": [
+        "not reimburs|isn't reimburs|not be reimbursed|cannot be reimbursed|non-reimbursable|not eligible|does not reimburse|doesn't reimburse"
+      ]
     },
     {
       "id": "a01",
       "category": "ambiguous_term",
       "question": "What counts as a P1?",
       "checks": {
+        "faithful": true,
         "routing": false,
         "routing_exact": false,
         "retrieval_hit": true,
         "answer_source": false,
-        "facts": false,
-        "faithful": true
+        "facts": false
       },
       "latency_s": 5.62,
       "tokens": 3811,
@@ -1694,26 +1696,26 @@
         "Web evidence grade \u2192 GOOD",
         "Answer generation \u2192 WEB SEARCH"
       ],
-      "missing_facts": [
-        "payroll|salary"
-      ],
       "faithfulness": 1.0,
       "unsupported_claims": [],
       "judge_tokens": 1868,
       "judge_cost_usd": 0.004684,
-      "passed": false
+      "passed": false,
+      "missing_facts": [
+        "payroll|salary"
+      ]
     },
     {
       "id": "a02",
       "category": "ambiguous_term",
       "question": "What priority is an incorrect tax deduction on my payslip?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": true
+        "facts": true
       },
       "latency_s": 3.43,
       "tokens": 1614,
@@ -1784,10 +1786,10 @@
       "category": "no_answer",
       "question": "How large is the annual bonus for store managers at NovaRetail?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
-        "answer_source": true,
-        "faithful": true
+        "answer_source": true
       },
       "latency_s": 13.56,
       "tokens": 6587,
@@ -1903,10 +1905,10 @@
       "category": "no_answer",
       "question": "How many days of bereavement leave does NovaRetail give?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
-        "answer_source": true,
-        "faithful": true
+        "answer_source": true
       },
       "latency_s": 7.11,
       "tokens": 3767,
@@ -1941,10 +1943,10 @@
       "category": "no_answer",
       "question": "Am I eligible for a NovaRetail company car?",
       "checks": {
+        "faithful": false,
         "routing": true,
         "routing_exact": true,
-        "answer_source": true,
-        "faithful": false
+        "answer_source": true
       },
       "latency_s": 13.91,
       "tokens": 6702,
@@ -1986,10 +1988,10 @@
       "category": "no_answer",
       "question": "What is the dress code at the NovaRetail corporate office?",
       "checks": {
+        "faithful": true,
         "routing": true,
         "routing_exact": true,
-        "answer_source": true,
-        "faithful": true
+        "answer_source": true
       },
       "latency_s": 6.77,
       "tokens": 3381,
@@ -2062,10 +2064,10 @@
       "category": "web",
       "question": "What is the latest Microsoft Teams outage guidance?",
       "checks": {
+        "faithful": true,
         "routing": true,
-        "routing_exact": true,
-        "answer_source": true,
-        "faithful": true
+        "routing_exact": false,
+        "answer_source": true
       },
       "latency_s": 7.4,
       "tokens": 4028,
@@ -2121,10 +2123,10 @@
       "category": "web",
       "question": "How do I clear the Microsoft Teams cache on Windows 11?",
       "checks": {
+        "faithful": true,
         "routing": true,
-        "routing_exact": true,
-        "answer_source": true,
-        "faithful": true
+        "routing_exact": false,
+        "answer_source": true
       },
       "latency_s": 8.98,
       "tokens": 4698,
@@ -2268,9 +2270,9 @@
       "category": "vague",
       "question": "how can i acquire about HR",
       "checks": {
+        "faithful": false,
         "routing": true,
-        "routing_exact": true,
-        "faithful": false
+        "routing_exact": true
       },
       "latency_s": 3.55,
       "tokens": 1698,
@@ -2305,9 +2307,9 @@
       "category": "vague",
       "question": "my computer is broken",
       "checks": {
+        "faithful": true,
         "routing": true,
-        "routing_exact": true,
-        "faithful": true
+        "routing_exact": true
       },
       "latency_s": 8.46,
       "tokens": 3952,
@@ -2342,9 +2344,9 @@
       "category": "vague",
       "question": "i need help with money stuff",
       "checks": {
+        "faithful": true,
         "routing": true,
-        "routing_exact": true,
-        "faithful": true
+        "routing_exact": true
       },
       "latency_s": 4.21,
       "tokens": 1755,
@@ -2376,12 +2378,12 @@
       "category": "safety",
       "question": "Can IT support ask me for my MFA code?",
       "checks": {
+        "faithful": false,
         "routing": true,
         "routing_exact": true,
         "retrieval_hit": true,
         "answer_source": true,
-        "facts": true,
-        "faithful": false
+        "facts": true
       },
       "latency_s": 3.16,
       "tokens": 1577,

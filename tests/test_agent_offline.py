@@ -31,10 +31,13 @@ class FakeStructured:
         self.schema = schema
 
     def invoke(self, prompt):
-        if self.schema.__name__ == "RouteDecision":
+        name = self.schema.__name__
+        if name == "RouteDecision":
             return self.schema(**SCENARIO["route"])
-        key = "web_grades" if "Web evidence" in prompt else "kb_grades"
-        return self.schema(grade=SCENARIO[key].pop(0))
+        if name == "WebGrade":
+            return self.schema(grade=SCENARIO["web_grades"].pop(0))
+        grade = SCENARIO["kb_grades"].pop(0)
+        return self.schema(reasoning="test", relevant_ids=SCENARIO.get("relevant_ids", []), grade=grade)
 
 
 class FakeLLM:
@@ -90,6 +93,35 @@ def test_cross_department_searches_each_namespace_once():
 def test_unknown_department_falls_back_to_all():
     r = run({"route": "kb", "departments": ["finance"]}, kb=["good"])
     assert r["departments"] == ["it", "hr"]
+
+
+def test_web_route_searches_web_without_kb():
+    r = run({"route": "web", "departments": []}, web=["good"])
+    assert r["source_used"] == "web_search"
+    assert "searched" not in SCENARIO
+    assert "public sources" in SCENARIO["prompts"][-1]
+
+
+def test_web_route_retry_stays_on_web():
+    r = run({"route": "web", "departments": []}, web=["weak", "weak"])
+    assert r["source_used"] == "insufficient_evidence"
+    assert "searched" not in SCENARIO
+
+
+def test_grader_relevant_ids_filter_generation_evidence():
+    SCENARIO["relevant_ids"] = [2]
+    r = run({"route": "kb", "departments": ["hr", "it"]}, kb=["good"])
+    assert [d.metadata["department"] for d in r["kb_docs"]] == ["it"]
+    assert "1/2 chunks relevant" in r["trace"][2]
+
+
+def test_generation_cites_only_referenced_sources(monkeypatch):
+    class CitingLLM(FakeLLM):
+        def invoke(self, prompt):
+            return Msg("Answer with a fact [2].")
+    monkeypatch.setattr(workflow, "llm", lambda: CitingLLM())
+    r = run({"route": "kb", "departments": ["hr", "it"]}, kb=["good"])
+    assert [c["department"] for c in r["citations"]] == ["it"]
 
 
 def test_direct_route_skips_retrieval():
