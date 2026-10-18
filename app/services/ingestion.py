@@ -1,13 +1,14 @@
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
+
+from docx import Document as DocxDocument
 from langchain_core.documents import Document
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 from pypdf import PdfReader
-from docx import Document as DocxDocument
+
 from app.core.access import ACCESS_LEVELS
 from app.core.config import BASE_DIR
-
 
 SUPPORTED = {".pdf", ".txt", ".md", ".docx"}
 

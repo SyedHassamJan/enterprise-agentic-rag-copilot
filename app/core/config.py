@@ -1,5 +1,6 @@
 from functools import lru_cache
 from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -7,6 +8,9 @@ BASE_DIR = Path(__file__).resolve().parents[2]
 class Settings(BaseSettings):
     app_name: str = "Enterprise Employee Support Agentic RAG Copilot"
     app_env: str = "development"
+    app_version: str = "1.1.0"
+    host: str = "127.0.0.1"
+    port: int = 8080
     openai_api_key: str = ""
     tavily_api_key: str = ""
     pinecone_api_key: str = ""

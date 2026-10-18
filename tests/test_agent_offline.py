@@ -12,9 +12,9 @@ import pytest
 from fastapi.testclient import TestClient
 from langchain_core.documents import Document
 
+import app.api.routes as routes
 from app.core.config import get_settings
 from app.rag import workflow
-import app.api.routes as routes
 from app.rag.vectorstore import _source_prefix
 from app.services.ingestion import source_id
 
@@ -208,7 +208,7 @@ def test_ingest_validates_key_and_department(client):
 
 
 def test_markdown_chunks_carry_title_section_and_doc_info(tmp_path):
-    from app.services.ingestion import load_file, chunk_documents
+    from app.services.ingestion import chunk_documents, load_file
     f = tmp_path / "policy.md"
     f.write_text("# Travel Policy\n\nOwner: Finance | Status: CURRENT\n\n## Flights\nEconomy under 6 hours.\n\n## Hotels\nCap $220.\n", encoding="utf-8")
     chunks = chunk_documents(load_file(f))
@@ -308,7 +308,8 @@ def test_audit_migrates_old_schema(tmp_path, monkeypatch):
     con = sqlite3.connect(db)
     con.execute("CREATE TABLE query_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, created_at TEXT NOT NULL, "
                 "question TEXT NOT NULL, source_used TEXT NOT NULL, trace_json TEXT NOT NULL)")
-    con.commit(); con.close()
+    con.commit()
+    con.close()
     monkeypatch.setattr(audit.settings, "audit_db_path", str(db))
     audit.init_db()
     audit.write_audit(question="q", source_used="direct", departments=[], trace=[], username="alex", role="employee")
@@ -321,3 +322,37 @@ def test_company_question_rejects_web_evidence_about_other_organisations():
     r = run({"route": "kb", "departments": ["hr"]}, kb=["weak", "weak"], web=[])
     assert r["source_used"] == "insufficient_evidence"
     assert any("not about NovaRetail" in t for t in r["trace"])
+
+
+# ---------------------------------------------------------------- hardening
+
+def test_health_and_readiness(client, monkeypatch):
+    assert client.get("/api/health").json()["status"] == "ok"
+    monkeypatch.setattr(routes.settings, "pinecone_api_key", "")
+    r = client.get("/api/ready")
+    assert r.status_code == 503 and "PINECONE_API_KEY" in r.json()["detail"]["missing"]
+
+
+def test_chat_errors_do_not_leak_internals(client, monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("secret internal detail sk-123")
+    monkeypatch.setattr(routes, "ask", boom)
+    r = client.post("/api/chat", json={"question": "hello there"})
+    assert r.status_code == 500
+    assert "sk-123" not in r.text and "error id" in r.json()["detail"]
+
+
+def test_ingest_rejects_oversized_upload(client, monkeypatch):
+    monkeypatch.setattr(routes, "MAX_UPLOAD_BYTES", 10)
+    r = client.post("/api/ingest", files={"file": ("big.md", b"# x\n" + b"a" * 50, "text/markdown")},
+                    data={"department": "it"}, headers={"X-Admin-Key": "test-admin-key"})
+    assert r.status_code == 413
+
+
+def test_citations_map_inline_refs_to_sources(monkeypatch):
+    class CitingLLM(FakeLLM):
+        def invoke(self, prompt):
+            return Msg("First fact [1]. Second fact [2].")
+    monkeypatch.setattr(workflow, "llm", lambda: CitingLLM())
+    r = run({"route": "kb", "departments": ["hr", "it"]}, kb=["good"])
+    assert [(c["department"], c["refs"]) for c in r["citations"]] == [("hr", [1]), ("it", [2])]

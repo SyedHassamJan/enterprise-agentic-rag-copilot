@@ -3,14 +3,16 @@ import re
 import time
 from pathlib import Path
 from typing import Literal
+
 from langchain_openai import ChatOpenAI
 from langchain_tavily import TavilySearch
-from langgraph.graph import StateGraph, START, END
+from langgraph.graph import END, START, StateGraph
+
 from app.core.access import retrieval_filter
 from app.core.config import get_settings
 from app.rag.departments import DEPARTMENTS
-from app.rag.state import AgentState, RouteDecision, EvidenceGrade, WebGrade
 from app.rag.rerank import rerank
+from app.rag.state import AgentState, EvidenceGrade, RouteDecision, WebGrade
 from app.rag.vectorstore import search
 from app.services.guardrails import detect_injection
 
@@ -186,14 +188,23 @@ Sources:
 {numbered_evidence(docs)}
 """).content
     cited = {int(n) for n in re.findall(r"\[(\d+)\]", answer)}
-    used = [d for i, d in enumerate(docs, start=1) if i in cited] or docs
-    citations, seen = [], set()
-    for d in used:
+    numbered = [(i, d) for i, d in enumerate(docs, start=1) if i in cited] or list(enumerate(docs, start=1))
+    # One citation per (file, department); `refs` lists the evidence numbers [n] in the answer that point to it,
+    # so the UI can turn inline markers into footnotes.
+    citations, by_key = [], {}
+    for i, d in numbered:
         key = (doc_name(d), d.metadata.get("department", ""))
-        if key not in seen:
-            seen.add(key)
+        if key not in by_key:
             dept = key[1]
-            citations.append({"title": f"{dept.upper()} · {key[0]}" if dept else key[0], "url": "", "type": "private_kb", "department": dept})
+            by_key[key] = {"title": f"{dept.upper()} · {key[0]}" if dept else key[0], "url": "", "type": "private_kb",
+                           "department": dept, "file": key[0], "document": d.metadata.get("title", ""),
+                           "sections": [], "refs": []}
+            citations.append(by_key[key])
+        entry = by_key[key]
+        entry["refs"].append(i)
+        section = d.metadata.get("section")
+        if section and section not in entry["sections"]:
+            entry["sections"].append(section)
     return {"answer": answer, "source_used": "private_kb", "citations": citations,
             "trace": add_trace(state, f"Answer generation → PRIVATE KB ({len(citations)} sources cited)")}
 

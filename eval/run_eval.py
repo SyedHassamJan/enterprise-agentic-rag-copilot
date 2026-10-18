@@ -22,7 +22,7 @@ import sys
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from langchain_core.callbacks import get_usage_metadata_callback
@@ -337,7 +337,7 @@ def main():
 
     meta = {
         "label": args.label,
-        "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC"),
+        "timestamp": datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC"),
         "model": settings.openai_model,
         "embedding_model": settings.embedding_model,
         "judge_model": None if args.no_judge else args.judge_model,

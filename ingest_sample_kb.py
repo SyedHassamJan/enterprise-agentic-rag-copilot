@@ -8,10 +8,11 @@ replaced and unchanged files are simply overwritten (no duplicates).
 """
 import argparse
 from pathlib import Path
+
 from app.core.config import get_settings
 from app.rag.departments import DEPARTMENTS
-from app.services.ingestion import load_file, chunk_documents, source_id, SUPPORTED
-from app.rag.vectorstore import upsert_source, reset_namespace
+from app.rag.vectorstore import reset_namespace, upsert_source
+from app.services.ingestion import SUPPORTED, chunk_documents, load_file, source_id
 
 settings = get_settings()
 

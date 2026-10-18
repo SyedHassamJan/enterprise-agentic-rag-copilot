@@ -1,19 +1,28 @@
+import logging
+import secrets
 import time
+import uuid
 from pathlib import Path
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Header
+
+from fastapi import APIRouter, File, Form, Header, HTTPException, UploadFile
 from langchain_core.callbacks import get_usage_metadata_callback
 from pydantic import BaseModel, Field
+
 from app.core.access import ACCESS_LEVELS, DEMO_USERS, get_user
 from app.core.config import get_settings
 from app.rag.departments import DEPARTMENTS
-from app.rag.workflow import ask
 from app.rag.vectorstore import upsert_source
-from app.services.ingestion import load_file, chunk_documents, source_id, SUPPORTED
+from app.rag.workflow import ask
 from app.services.audit import write_audit
 from app.services.guardrails import detect_injection
+from app.services.ingestion import SUPPORTED, chunk_documents, load_file, source_id
 
 router = APIRouter(prefix="/api")
 settings = get_settings()
+logger = logging.getLogger(__name__)
+
+MAX_UPLOAD_BYTES = 10 * 1024 * 1024  # 10 MB
+REQUIRED_KEYS = ("openai_api_key", "pinecone_api_key", "tavily_api_key")
 
 class ChatRequest(BaseModel):
     question: str = Field(min_length=2, max_length=3000)
@@ -21,7 +30,17 @@ class ChatRequest(BaseModel):
 
 @router.get("/health")
 def health():
-    return {"status": "ok", "service": settings.app_name}
+    """Liveness: the process is up. Used by Docker HEALTHCHECK and the CI smoke test."""
+    return {"status": "ok", "service": settings.app_name, "version": settings.app_version, "env": settings.app_env}
+
+
+@router.get("/ready")
+def ready():
+    """Readiness: required configuration is present (names only, never values)."""
+    missing = [k.upper() for k in REQUIRED_KEYS if not getattr(settings, k)]
+    if missing:
+        raise HTTPException(status_code=503, detail={"status": "not_ready", "missing": missing})
+    return {"status": "ready"}
 
 
 @router.get("/departments")
@@ -62,7 +81,10 @@ def chat(payload: ChatRequest, x_demo_user: str = Header(default="")):
         }
 
     except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc)) from exc
+        # Log full details server-side; return only a reference id so internals never reach the browser.
+        error_id = uuid.uuid4().hex[:8]
+        logger.exception("chat request failed [error_id=%s]", error_id)
+        raise HTTPException(status_code=500, detail=f"The assistant failed to answer (error id {error_id}).") from exc
 
 
 @router.post("/ingest")
@@ -72,7 +94,7 @@ async def ingest(
     access: str = Form(default=""),  # empty = use the document's own "Access:" header, else "all"
     x_admin_key: str = Header(default=""),
 ):
-    if x_admin_key != settings.admin_api_key:
+    if not secrets.compare_digest(x_admin_key.encode(), settings.admin_api_key.encode()):
         raise HTTPException(status_code=401, detail="Invalid admin key")
     if department not in DEPARTMENTS:
         raise HTTPException(status_code=400, detail=f"Unknown department. Valid: {', '.join(DEPARTMENTS)}")
@@ -81,10 +103,13 @@ async def ingest(
     suffix = Path(file.filename or "").suffix.lower()
     if suffix not in SUPPORTED:
         raise HTTPException(status_code=400, detail=f"Supported: {', '.join(sorted(SUPPORTED))}")
+    content = await file.read(MAX_UPLOAD_BYTES + 1)
+    if len(content) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail=f"File too large (max {MAX_UPLOAD_BYTES // (1024 * 1024)} MB)")
     upload_dir = Path(settings.upload_dir) / department
     upload_dir.mkdir(parents=True, exist_ok=True)
     dest = upload_dir / Path(file.filename).name
-    dest.write_bytes(await file.read())
+    dest.write_bytes(content)
     docs = load_file(dest)
 
     # Indirect prompt injection: instructions hidden inside a document would later reach the LLM

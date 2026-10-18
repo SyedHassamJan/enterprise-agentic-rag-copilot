@@ -1,6 +1,8 @@
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from pathlib import Path
+
 from app.core.config import get_settings
 from app.services.guardrails import redact_pii
 
@@ -21,6 +23,7 @@ COLUMNS = {
 
 
 def init_db() -> None:
+    Path(settings.audit_db_path).parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(settings.audit_db_path)
     cols = ", ".join(f"{name} {kind}" for name, kind in COLUMNS.items())
     con.execute(f"CREATE TABLE IF NOT EXISTS query_audit (id INTEGER PRIMARY KEY AUTOINCREMENT, {cols})")
@@ -41,7 +44,7 @@ def write_audit(*, question: str, source_used: str, departments: list[str], trac
     con.execute(
         "INSERT INTO query_audit(created_at, username, role, question, source_used, departments, "
         "latency_ms, total_tokens, injection_flag, trace_json) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (datetime.now(timezone.utc).isoformat(), username, role, redact_pii(question), source_used,
+        (datetime.now(UTC).isoformat(), username, role, redact_pii(question), source_used,
          ",".join(departments), latency_ms, total_tokens, int(injection_flag),
          json.dumps([redact_pii(t) for t in trace])),
     )

@@ -5,7 +5,9 @@ reads the query and each candidate chunk together, which ranks "which chunk actu
 far more precisely. We over-fetch candidates with vector search, then keep the best few.
 """
 import logging
+
 from langchain_core.documents import Document
+
 from app.core.config import get_settings
 from app.rag.vectorstore import get_pinecone
 
